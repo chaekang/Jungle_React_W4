@@ -105,7 +105,7 @@ flowchart LR
 
 이번 프로젝트는 기능 축을 기준으로 역할을 나눴고, 각자 자기 파일만 수정하는 규칙으로 협업했습니다.
 
-| 역할 | 담당 영역 | 대표 파일 | 협업 경계 |
+| 팀원 | 담당 영역 | 대표 파일 | 협업 경계 |
 | --- | --- | --- | --- |
 | 구름 | `Virtual DOM Core` | `src/core/vdom-node.js`, `src/core/dom-to-vdom.js`, `src/core/vdom-to-html.js` | DOM을 VNode로 바꾸고 다시 HTML로 직렬화 |
 | 이정현 | `Diff / Patch Engine` | `src/diff/diff.js`, `src/diff/patch-dom.js` | 이전/다음 VNode 차이 계산, 실제 DOM 부분 반영 |
