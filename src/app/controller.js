@@ -61,7 +61,7 @@ export function bootstrapApp() {
     }
 
     const appShell = createAppShell();
-    appRoot.replaceChildren(appShell);
+    appRoot.innerHTML = appShell;
 
     const uiRefs = getUiRefs(appRoot);
     assertUiRefs(uiRefs);
