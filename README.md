@@ -2,27 +2,10 @@
 
 테스트 영역에서 HTML을 수정하고, `Diff / Patch / History` 흐름으로 실제 DOM에 변경분만 반영해 보는 실험형 웹 앱입니다.
 
-## 발표 구성 한눈에 보기
-
-| 구간 | 시간 | 핵심 메시지 |
-| --- | --- | --- |
-| 오프닝 | 20초 | 이 프로젝트는 mini React의 핵심 원리를 직접 눈으로 확인하는 데모입니다. |
-| 서비스 소개 | 35초 | 전체를 다시 그리지 않고, 바뀐 부분만 반영하는 흐름을 보여줍니다. |
-| 팀원 역할 분배 | 35초 | Virtual DOM, Diff/Patch, UI, History를 4개 역할로 나눠 협업했습니다. |
-| 설계 | 45초 | 단일 페이지, Vanilla JS, 공통 인터페이스 계약, 파일 경계로 설계를 단순화했습니다. |
-| 핵심 개념 | 1분 25초 | `VNode`, `diffVNodes`, `applyPatches`, `createHistoryManager`가 핵심입니다. |
-| 마무리 | 20초 | 직접 만든 mini React 구조를 통해 렌더링 원리를 체험했습니다. |
-
-총 발표 시간은 약 4분입니다.
-
 ## 1. 오프닝
 
 이 프로젝트의 목적은 React가 내부에서 처리하는 핵심 개념을 라이브러리 없이 직접 구현해 보는 것입니다.  
 브라우저 DOM을 Virtual DOM으로 바꾸고, 이전 상태와 다음 상태를 비교한 뒤, 실제 DOM에는 필요한 변경만 적용합니다.
-
-> 발표 멘트  
-> "저희 프로젝트는 Virtual DOM 기반 렌더링 원리를 직접 구현해 본 mini React 실험입니다.  
-> 사용자는 테스트 영역에서 HTML을 수정하고, Patch 버튼을 누르면 실제 영역에는 바뀐 부분만 반영됩니다."
 
 ## 2. 서비스 소개
 
@@ -42,43 +25,7 @@
 6. `applyPatches()`가 patch 목록을 실제 영역 DOM에 반영합니다.
 7. 마지막으로 `history.push(nextVNode)`로 새 상태를 저장하고, 두 화면을 다시 맞춰 `Undo / Redo`가 가능해집니다.
 
-### 코드로 보면 더 쉽게
-
-실제 핵심 코드는 `src/app/controller.js`의 `Patch` 버튼 이벤트 안에 들어 있습니다.  
-중요한 점은 "문자열을 바로 실제 DOM에 덮어쓰지 않는다"는 것입니다. 먼저 비교 가능한 VNode로 바꾼 뒤, 차이만 계산해서 반영합니다.
-
-```js
-uiRefs.patchButton.addEventListener("click", () => {
-  const testMarkup = readTestMarkup(uiRefs.testSurface);
-  const wrapper = createDetachedWrapper(testMarkup);
-
-  const previousVNode = history.current();
-  const nextVNode = createContentRootVNode(wrapper);
-  const patches = diffVNodes(previousVNode, nextVNode);
-
-  actualSurfaceElement = applyPatches(actualSurfaceElement, patches) ?? actualSurfaceElement;
-  history.push(nextVNode);
-
-  writeMarkup(actualSurfaceElement, contentVNodeToMarkup(history.current()));
-  writeMarkup(uiRefs.testSurface, contentVNodeToMarkup(history.current()));
-  setNavigationState(uiRefs, createHistoryState(history));
-});
-```
-
-이 코드를 한 줄씩 말로 풀면 아래와 같습니다.
-
-| 코드 요소 | 쉬운 설명 |
-| --- | --- |
-| `readTestMarkup()` | 사용자가 수정한 HTML을 문자열로 읽습니다. |
-| `createDetachedWrapper()` | 읽은 문자열을 비교 가능한 임시 DOM으로 바꿉니다. |
-| `history.current()` | 지금 화면에 보이는 이전 상태를 가져옵니다. |
-| `createContentRootVNode()` | 새 DOM을 VNode 트리로 바꿉니다. |
-| `diffVNodes()` | 이전 상태와 새 상태를 비교해 "어디가 어떻게 바뀌었는지" 계산합니다. |
-| `applyPatches()` | 계산된 변경만 실제 DOM에 반영합니다. |
-| `history.push()` | 반영이 끝난 새 상태를 저장합니다. |
-| `writeMarkup()` | 실제 영역과 테스트 영역을 같은 최신 상태로 다시 맞춥니다. |
-
-즉, 코드 흐름은 아래 한 문장으로 정리할 수 있습니다.
+코드 흐름은 아래 한 문장으로 정리할 수 있습니다.
 
 `수정한 HTML 읽기 -> 임시 DOM 만들기 -> VNode 변환 -> diff 계산 -> patch 적용 -> history 저장 -> 화면 동기화`
 
@@ -97,9 +44,6 @@ flowchart LR
     H -->|"Undo / Redo"| A
 ```
 
-> 발표 멘트  
-> "서비스 구조는 아주 단순합니다. 오른쪽 테스트 영역에서 마크업을 바꾸고 Patch를 누르면, 실제 영역에는 전체가 아니라 변경분만 반영됩니다.  
-> 그리고 그 결과를 History에 저장해서 Undo와 Redo까지 이어지는 흐름을 한 화면에서 확인할 수 있습니다."
 
 ## 3. 팀원 역할 분배
 
@@ -117,10 +61,6 @@ flowchart LR
 - 역할마다 파일 경계를 명확히 나눠 머지 충돌을 줄였습니다.
 - 공통 계약은 `docs/INTERFACES.md`로 고정해 함수 이름과 입출력을 통일했습니다.
 - UI, 자료구조, 알고리즘, 상태 관리를 분리해 각 역할이 독립적으로 구현될 수 있게 했습니다.
-
-> 발표 멘트  
-> "저희는 기능별로 Virtual DOM, Diff/Patch, UI, History를 분리했습니다.  
-> 특히 공통 인터페이스 문서를 기준으로 export 이름과 시그니처를 맞춰서, 파일을 건드리지 않고도 병렬 협업이 가능하도록 설계했습니다."
 
 ## 4. 설계
 
@@ -154,9 +94,6 @@ flowchart LR
 - 초기 로딩 시 샘플 마크업을 실제 영역에 렌더링하고, 이를 첫 번째 History 상태로 저장합니다.
 - 이후 `Patch`, `Undo`, `Redo` 버튼 이벤트가 모두 Controller를 통해 동작합니다.
 
-> 발표 멘트  
-> "설계는 한마디로 흐름 중심입니다. UI에서 입력을 받고, DOM을 VNode로 바꾸고, Diff를 계산한 뒤, Patch로 실제 DOM만 업데이트하고, 마지막으로 History에 저장합니다.  
-> React의 큰 흐름을 가장 단순한 형태로 잘라서 보여주는 구조라고 보시면 됩니다."
 
 ## 5. 핵심 개념
 
@@ -190,9 +127,7 @@ flowchart TD
     LIST --> ITEM2["li[data-topic='diff']"]
 ```
 
-> 발표 멘트  
-> "핵심은 실제 DOM을 바로 비교하지 않고, 먼저 VNode라는 단순한 트리 구조로 바꾼다는 점입니다.  
-> 이렇게 바꾸면 태그, 속성, 텍스트, 자식 노드를 규칙적으로 비교할 수 있어서 이후 Diff와 History 관리가 쉬워집니다."
+
 
 ### 5-2. Diff: 이전 상태와 다음 상태를 비교하는 방법
 
@@ -225,9 +160,6 @@ flowchart TD
 }
 ```
 
-> 발표 멘트  
-> "Diff의 핵심은 무엇이 바뀌었는지뿐 아니라 어디가 바뀌었는지를 찾는 것입니다.  
-> 여기서 `path`가 노드의 주소 역할을 하면서, 이후 Patch 단계가 정확한 위치만 수정할 수 있게 도와줍니다."
 
 ### 5-3. Patch: 실제 DOM에는 필요한 변경만 반영
 
@@ -271,9 +203,6 @@ sequenceDiagram
     C->>T: 테스트 영역 동기화
 ```
 
-> 발표 멘트  
-> "History는 단순히 화면만 되돌리는 것이 아니라, VNode snapshot 자체를 저장합니다.  
-> 그래서 Undo와 Redo도 화면 조작이 아니라 상태 이동으로 처리되고, 이 점이 상태 기반 UI 구조를 이해하는 데 중요한 포인트입니다."
 
 ## 6. 발표에서 꼭 짚을 인터페이스
 
