@@ -98,6 +98,15 @@ export function bootstrapApp() {
       const wrapper = createDetachedWrapper(testMarkup);
       const previousVNode = history.current();
       const nextVNode = createContentRootVNode(wrapper);
+      const previousMarkup = contentVNodeToMarkup(previousVNode);
+      const nextMarkup = contentVNodeToMarkup(nextVNode);
+
+      if (previousMarkup === nextMarkup) {
+        writeMarkup(uiRefs.testSurface, previousMarkup);
+        setNavigationState(uiRefs, createHistoryState(history));
+        return;
+      }
+
       const patches = diffVNodes(previousVNode, nextVNode);
 
       if (!Array.isArray(patches)) {
