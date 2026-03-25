@@ -203,19 +203,7 @@ sequenceDiagram
     C->>T: 테스트 영역 동기화
 ```
 
-
-## 6. 발표에서 꼭 짚을 인터페이스
-
-| 인터페이스 | 발표용 설명 |
-| --- | --- |
-| `VNode` | DOM을 비교하기 쉬운 트리 구조로 바꾼 데이터 모델 |
-| `diffVNodes(previousNode, nextNode, path = [])` | 이전 상태와 다음 상태를 비교해 patch 목록을 만드는 함수 |
-| `applyPatches(rootElement, patches)` | patch 목록을 실제 DOM에 적용하는 함수 |
-| `createHistoryManager(limit = 20)` | 상태 snapshot을 저장하고 Undo/Redo를 관리하는 객체 |
-
-이 4개만 이해해도 이 프로젝트의 핵심 동작 원리는 대부분 설명할 수 있습니다.
-
-## 7. 마무리
+## 6. 마무리
 
 ### 구현 성과 요약
 
@@ -223,6 +211,3 @@ sequenceDiagram
 - 변경분만 실제 DOM에 반영하는 Patch 구조를 눈으로 확인할 수 있게 만들었습니다.
 - 상태 snapshot 기반의 Undo / Redo까지 연결해 mini React의 핵심 개념을 한 화면에 담았습니다.
 
-> 발표 멘트  
-> "정리하면, 저희는 단순한 UI를 만든 것이 아니라 mini React의 핵심 원리를 직접 구현해 본 프로젝트를 완성했습니다.  
-> Virtual DOM, Diff, Patch, History를 직접 연결해 보면서 프레임워크가 내부에서 해 주는 일을 더 깊게 이해할 수 있었습니다."
