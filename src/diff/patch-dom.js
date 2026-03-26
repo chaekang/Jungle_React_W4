@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Owner: Role 2 - Diff / Patch Engine
  * Editable only by the Role 2 branch.
  */
@@ -7,6 +7,41 @@ import { PATCH_TYPES } from "./change-types.js";
 
 const ELEMENT_NODE = 1;
 const TEXT_NODE = 3;
+const BOOLEAN_ATTRIBUTES = new Set(["checked", "selected", "disabled", "readonly", "multiple"]);
+
+function shouldSerializeAttribute(tagName, name) {
+  if (!name) {
+    return false;
+  }
+
+  if (tagName === "textarea" && name === "value") {
+    return false;
+  }
+
+  if (tagName === "select" && name === "value") {
+    return false;
+  }
+
+  return true;
+}
+
+function setDomAttribute(targetNode, name, value) {
+  if (!(targetNode instanceof Element) || !name || !shouldSerializeAttribute(targetNode.tagName.toLowerCase(), name)) {
+    return;
+  }
+
+  if (BOOLEAN_ATTRIBUTES.has(name)) {
+    if (value === false || value == null) {
+      targetNode.removeAttribute(name);
+      return;
+    }
+
+    targetNode.setAttribute(name, "");
+    return;
+  }
+
+  targetNode.setAttribute(name, value ?? "");
+}
 
 function syncDomProperty(targetNode, name, value) {
   if (!(targetNode instanceof Element) || !name) {
@@ -15,6 +50,15 @@ function syncDomProperty(targetNode, name, value) {
 
   if (name === "value" && "value" in targetNode) {
     targetNode.value = value ?? "";
+
+    if (targetNode instanceof HTMLTextAreaElement) {
+      targetNode.textContent = value ?? "";
+    }
+
+    if (targetNode instanceof HTMLSelectElement) {
+      targetNode.value = value ?? "";
+    }
+
     return;
   }
 
@@ -35,6 +79,15 @@ function clearDomProperty(targetNode, name) {
 
   if (name === "value" && "value" in targetNode) {
     targetNode.value = "";
+
+    if (targetNode instanceof HTMLTextAreaElement) {
+      targetNode.textContent = "";
+    }
+
+    if (targetNode instanceof HTMLSelectElement) {
+      targetNode.selectedIndex = -1;
+    }
+
     return;
   }
 
@@ -66,9 +119,13 @@ function createDomNodeFromVNode(node) {
   const children = node.children ?? [];
 
   Object.entries(attributes).forEach(([name, value]) => {
-    element.setAttribute(name, value);
+    setDomAttribute(element, name, value);
     syncDomProperty(element, name, value);
   });
+
+  if (element instanceof HTMLTextAreaElement && "value" in attributes) {
+    element.textContent = attributes.value ?? "";
+  }
 
   children.forEach((childNode) => {
     const childDomNode = createDomNodeFromVNode(childNode);
@@ -112,11 +169,90 @@ function patchPriority(patch) {
     return 0;
   }
 
-  if (patch.type === PATCH_TYPES.INSERT_CHILD) {
+  if (patch.type === PATCH_TYPES.REORDER_CHILDREN) {
     return 2;
   }
 
+  if (patch.type === PATCH_TYPES.INSERT_CHILD) {
+    return 3;
+  }
+
   return 1;
+}
+
+function getVNodeKey(node) {
+  if (node?.type !== "element") {
+    return null;
+  }
+
+  const key = node.attributes?.key;
+  return typeof key === "string" && key.length > 0 ? key : null;
+}
+
+function canReuseForVNode(domNode, vnode) {
+  if (!domNode || !vnode) {
+    return false;
+  }
+
+  if (vnode.type === "text") {
+    return domNode.nodeType === TEXT_NODE;
+  }
+
+  if (vnode.type !== "element" || domNode.nodeType !== ELEMENT_NODE) {
+    return false;
+  }
+
+  return domNode.nodeName.toLowerCase() === String(vnode.tagName ?? "").toLowerCase();
+}
+
+function reorderChildren(parentNode, nextChildren) {
+  if (!parentNode || parentNode.nodeType === TEXT_NODE) {
+    return;
+  }
+
+  const keyedNodes = new Map();
+  const unkeyedQueue = [];
+
+  Array.from(parentNode.childNodes).forEach((childNode) => {
+    if (childNode.nodeType === ELEMENT_NODE) {
+      const key = childNode.getAttribute("key");
+
+      if (key) {
+        keyedNodes.set(key, childNode);
+        return;
+      }
+    }
+
+    unkeyedQueue.push(childNode);
+  });
+
+  const orderedNodes = nextChildren
+    .map((childVNode) => {
+      const key = getVNodeKey(childVNode);
+
+      if (key) {
+        const existingNode = keyedNodes.get(key);
+
+        if (existingNode && canReuseForVNode(existingNode, childVNode)) {
+          keyedNodes.delete(key);
+          return existingNode;
+        }
+      }
+
+      const reusableNode = unkeyedQueue[0];
+
+      if (reusableNode && !key && canReuseForVNode(reusableNode, childVNode)) {
+        unkeyedQueue.shift();
+        return reusableNode;
+      }
+
+      return createDomNodeFromVNode(childVNode);
+    })
+    .filter((node) => node !== null);
+
+  const fragment = document.createDocumentFragment();
+  orderedNodes.forEach((node) => fragment.appendChild(node));
+  parentNode.replaceChildren(fragment);
 }
 
 function sortPatches(patches) {
@@ -225,7 +361,7 @@ export function applyPatches(rootElement, patches) {
         return;
       }
 
-      targetNode.setAttribute(payload.name, payload.value ?? "");
+      setDomAttribute(targetNode, payload.name, payload.value ?? "");
       syncDomProperty(targetNode, payload.name, payload.value ?? "");
       return;
     }
@@ -239,6 +375,12 @@ export function applyPatches(rootElement, patches) {
 
       targetNode.removeAttribute(payload.name);
       clearDomProperty(targetNode, payload.name);
+      return;
+    }
+
+    if (type === PATCH_TYPES.REORDER_CHILDREN) {
+      const parentNode = getNodeAtPath(currentRoot, path);
+      reorderChildren(parentNode, payload.children ?? []);
       return;
     }
 
@@ -274,3 +416,9 @@ export function applyPatches(rootElement, patches) {
 
   return currentRoot;
 }
+
+
+
+
+
+

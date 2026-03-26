@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Owner: Role 1 - Virtual DOM Core
  * Editable only by the Role 1 branch.
  */
@@ -88,10 +88,12 @@ export function domNodeToVNode(node) {
   }
 
   const attributes = readLiveAttributes(node);
-  const children = Array.from(node.childNodes)
-    .filter((childNode) => !isWhitespaceOnlyText(childNode))
-    .map((childNode) => domNodeToVNode(childNode))
-    .filter((childNode) => childNode !== null);
+  const children = node instanceof HTMLTextAreaElement
+    ? []
+    : Array.from(node.childNodes)
+        .filter((childNode) => !isWhitespaceOnlyText(childNode))
+        .map((childNode) => domNodeToVNode(childNode))
+        .filter((childNode) => childNode !== null);
 
   return createElementVNode(node.tagName, attributes, children);
 }
@@ -105,3 +107,8 @@ export function domSubtreeToVNode(rootElement) {
 
   return vnode;
 }
+
+
+
+
+

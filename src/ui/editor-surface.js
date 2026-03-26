@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Owner: Role 3 - Playground UI
  * Editable only by the Role 3 branch.
  */
@@ -57,6 +57,12 @@ function sanitizeHtml(html) {
   return template.innerHTML;
 }
 
+function findTestSurfacePreview(sourceElement) {
+  return sourceElement?.closest?.(".surface-card")?.querySelector?.('[data-surface-preview="test"]') ?? null;
+}
+
+
+
 export function getUiRefs(rootElement) {
   if (!(rootElement instanceof Element)) {
     throw new Error("getUiRefs(rootElement): rootElement must be a DOM Element");
@@ -65,6 +71,7 @@ export function getUiRefs(rootElement) {
   const refs = {
     actualSurface: rootElement.querySelector('[data-surface="actual"]'),
     testSurface: rootElement.querySelector('[data-surface="test"]'),
+    testSurfacePreview: rootElement.querySelector('[data-surface-preview="test"]'),
     patchButton: rootElement.querySelector('[data-action="patch"]'),
     undoButton: rootElement.querySelector('[data-action="undo"]'),
     redoButton: rootElement.querySelector('[data-action="redo"]'),
@@ -72,12 +79,26 @@ export function getUiRefs(rootElement) {
   };
 
   for (const [key, value] of Object.entries(refs)) {
+    if (key === "testSurfacePreview") {
+      continue;
+    }
+
     if (!value) {
       throw new Error(`getUiRefs(rootElement): missing required UI element "${key}"`);
     }
   }
 
   return refs;
+}
+
+export function bindTestSurfaceMirror(sourceElement, previewElement) {
+  if (!(sourceElement instanceof HTMLTextAreaElement) || !(previewElement instanceof HTMLElement)) {
+    return;
+  }
+
+  previewElement.addEventListener("input", () => {
+    sourceElement.value = sanitizeHtml(previewElement.innerHTML).trim();
+  });
 }
 
 export function readTestMarkup(testSurfaceElement) {
@@ -98,7 +119,15 @@ export function writeMarkup(targetElement, html) {
   }
 
   if (isEditableTextInput(targetElement)) {
-    targetElement.value = String(html ?? "");
+    const sanitized = String(html ?? "");
+    targetElement.value = sanitized;
+
+    const previewElement = findTestSurfacePreview(targetElement);
+
+    if (previewElement) {
+      previewElement.innerHTML = sanitizeHtml(sanitized);
+    }
+
     return;
   }
 
@@ -119,3 +148,6 @@ export function setNavigationState(refs, state) {
   refs.redoButton.disabled = !canRedo;
   refs.historyStatus.textContent = `${Math.max(index + 1, 1)} / ${Math.max(size, 1)}`;
 }
+
+
+

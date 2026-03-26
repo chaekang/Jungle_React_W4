@@ -5,6 +5,10 @@
 
 import { writeMarkup } from "../ui/editor-surface.js";
 
+function contentVNodeToMarkup(currentVNode, vNodeToHtml) {
+  return (currentVNode?.children ?? []).map((child) => vNodeToHtml(child)).join("");
+}
+
 export function syncBothSurfaces(uiRefs, currentVNode, vNodeToHtml) {
   if (!uiRefs || typeof uiRefs !== "object") {
     throw new Error("syncBothSurfaces(uiRefs, currentVNode, vNodeToHtml) requires uiRefs");
@@ -24,7 +28,7 @@ export function syncBothSurfaces(uiRefs, currentVNode, vNodeToHtml) {
     throw new Error("syncBothSurfaces requires vNodeToHtml to be a function");
   }
 
-  const markup = vNodeToHtml(currentVNode);
+  const markup = contentVNodeToMarkup(currentVNode, vNodeToHtml);
 
   if (typeof markup !== "string") {
     throw new Error("vNodeToHtml(currentVNode) must return a string");

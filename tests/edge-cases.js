@@ -47,6 +47,28 @@ test("diffVNodes updates changed text nodes", () => {
   assertEqual(patches[0].type, PATCH_TYPES.UPDATE_TEXT, "patch type should be UPDATE_TEXT");
 });
 
+test("diffVNodes emits keyed child reorder patch for key-based reordering", () => {
+  const previousNode = createElementVNode("ul", {}, [
+    createElementVNode("li", { key: "a" }, [createTextVNode("A")]),
+    createElementVNode("li", { key: "b" }, [createTextVNode("B")]),
+  ]);
+  const nextNode = createElementVNode("ul", {}, [
+    createElementVNode("li", { key: "b" }, [createTextVNode("B")]),
+    createElementVNode("li", { key: "a" }, [createTextVNode("A")]),
+  ]);
+  const patches = diffVNodes(previousNode, nextNode);
+
+  assert(
+    patches.some(
+      (patch) =>
+        patch.type === PATCH_TYPES.REORDER_CHILDREN &&
+        Array.isArray(patch.path) &&
+        patch.path.length === 0
+    ),
+    "reordering keyed siblings should emit REORDER_CHILDREN"
+  );
+});
+
 test("diffVNodes removes trailing children", () => {
   const previousNode = createElementVNode("div", {}, [
     createElementVNode("span", { id: "a" }, []),
@@ -124,6 +146,33 @@ test("root replacement detaches the old element reference used by the controller
   );
 
   host.remove();
+});
+
+test("applyPatches reuses keyed DOM nodes during reordering", () => {
+  const root = document.createElement("ul");
+  const first = document.createElement("li");
+  first.setAttribute("key", "a");
+  first.textContent = "A";
+  const second = document.createElement("li");
+  second.setAttribute("key", "b");
+  second.textContent = "B";
+  root.append(first, second);
+
+  applyPatches(root, [
+    {
+      type: PATCH_TYPES.REORDER_CHILDREN,
+      path: [],
+      payload: {
+        children: [
+          createElementVNode("li", { key: "b" }, [createTextVNode("B")]),
+          createElementVNode("li", { key: "a" }, [createTextVNode("A")]),
+        ],
+      },
+    },
+  ]);
+
+  assertEqual(root.childNodes[0], second, "existing keyed node should move instead of being recreated");
+  assertEqual(root.childNodes[1], first, "existing keyed node should be preserved after move");
 });
 
 log("");

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Owner: Role 4 - History / App Controller
  * Editable only by the Role 4 branch.
  */
@@ -12,6 +12,7 @@ import { applyPatches } from "../diff/patch-dom.js";
 import { createHistoryManager } from "../state/history-manager.js";
 import { createAppShell } from "../ui/layout-template.js";
 import {
+  bindTestSurfaceMirror,
   getUiRefs,
   readTestMarkup,
   setNavigationState,
@@ -51,6 +52,12 @@ function contentVNodeToMarkup(vNode) {
   return (vNode?.children ?? []).map((child) => vNodeToHtml(child)).join("");
 }
 
+function syncActualSurfaceWithVNode(actualSurfaceElement, nextVNode) {
+  const previousVNode = createContentRootVNode(actualSurfaceElement);
+  const patches = diffVNodes(previousVNode, nextVNode);
+  return applyPatches(actualSurfaceElement, patches) ?? actualSurfaceElement;
+}
+
 function createHistoryState(history) {
   return {
     canUndo: history.canUndo(),
@@ -74,6 +81,7 @@ export function bootstrapApp() {
 
     const uiRefs = getUiRefs(appRoot);
     assertUiRefs(uiRefs);
+    bindTestSurfaceMirror(uiRefs.testSurface, uiRefs.testSurfacePreview);
 
     const history = createHistoryManager(HISTORY_LIMIT);
     let actualSurfaceElement = uiRefs.actualSurface;
@@ -112,7 +120,6 @@ export function bootstrapApp() {
 
       actualSurfaceElement = applyPatches(actualSurfaceElement, patches) ?? actualSurfaceElement;
       history.push(nextVNode);
-      writeMarkup(actualSurfaceElement, contentVNodeToMarkup(history.current()));
       writeMarkup(uiRefs.testSurface, contentVNodeToMarkup(history.current()));
       setNavigationState(uiRefs, createHistoryState(history));
     });
@@ -121,7 +128,7 @@ export function bootstrapApp() {
       const previousState = history.undo();
 
       if (previousState) {
-        writeMarkup(actualSurfaceElement, contentVNodeToMarkup(previousState));
+        actualSurfaceElement = syncActualSurfaceWithVNode(actualSurfaceElement, previousState);
         writeMarkup(uiRefs.testSurface, contentVNodeToMarkup(previousState));
       }
 
@@ -132,7 +139,7 @@ export function bootstrapApp() {
       const nextState = history.redo();
 
       if (nextState) {
-        writeMarkup(actualSurfaceElement, contentVNodeToMarkup(nextState));
+        actualSurfaceElement = syncActualSurfaceWithVNode(actualSurfaceElement, nextState);
         writeMarkup(uiRefs.testSurface, contentVNodeToMarkup(nextState));
       }
 
